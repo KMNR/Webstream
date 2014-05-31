@@ -1,3 +1,6 @@
+import subprocess
+import settings
+
 def clean():
     def do_directory(p):
         contents = os.listdir(p)
@@ -14,6 +17,9 @@ def clean():
             d = datetime(int(l[2]),int(l[0]),int(l[1]))
             now = datetime.today()
             if now-d > timedelta(days=120):
-                util.lnp("Removing %s/%s" % (p,f))
+                util.lnp("Removing {}/{}".fomat(p,f))
                 subprocess.Popen(['rm',f],cwd=p).wait()
-    do_directory(settings.OUTPUT_DIR)        
+    do_directory(settings.RECORDER_FOLDER)
+
+if __name__ == "__main__":
+    clean()        

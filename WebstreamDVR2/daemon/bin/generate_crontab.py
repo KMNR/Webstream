@@ -29,7 +29,7 @@ def show_to_crontab(show):
     start_time = datetime.strptime(show['start_time'],time_format)
     cronline = "{min} {hour} {dom} {mon} {dow} {command}"
     rd = {
-        'target': RECORDER_FOLDER.format(show=safename(show['title'])),
+        'target': RECORDER_FOLDER,
         'stream': STREAM_URL,
         'show': safename(show['title']),
         'duration': show['duration']/60.0
