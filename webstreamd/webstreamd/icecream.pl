@@ -1195,7 +1195,12 @@ sub debug
 
 sub process
 {
-	my ($url) = shift || return undef;
+	$config->{'stop'} = 0;
+	$config->{'played-tracks'} = 0;
+	$config->{'bytes-downloaded'} = 0;
+	$config->{'start-time'} = time();
+	
+    my ($url) = shift || return undef;
 	my ($config) = shift || return undef;
 	
 	# play direct stream url (not .pls nor .m3u)
@@ -1225,10 +1230,6 @@ sub process
 
 	debug("play list parsed");
 
-	$config->{'stop'} = 0;
-	$config->{'played-tracks'} = 0;
-	$config->{'bytes-downloaded'} = 0;
-	$config->{'start-time'} = time();
 
 	my $entry = ();
 	foreach $entry (@pls) 

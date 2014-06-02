@@ -18,4 +18,5 @@ class Settings(object):
         self.LEADIN = timedelta(minutes=config.getint("recording", "leadin"))
         self.LEADOUT = timedelta(minutes=config.getint("recording", "leadout"))
         self.RECORDINGDIR = config.get("recording", "directory")
+        self.KEEPFOR = config.getint("recording","keepfor")
         self.SCHEDULE = config.get("schedule", "schedule")

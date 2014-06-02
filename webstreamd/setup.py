@@ -60,14 +60,13 @@ dist = setup(
     zip_safe=False,
     data_files=[('/etc/webstream.d',['webstreamd/skel/webstream.d/webstreamd.conf']),
                ('/etc/cron.d',['webstreamd/skel/cron.d/webstreamd']),
-               ('webstreamd',['webstreamd/record.sh']),
                ('webstreamd',['webstreamd/icecream.pl'])],
     entry_points={
      'console_scripts': [
          'webstreamd-crontab = webstreamd.crontab:main',
          'webstreamd-kmnr = webstreamd.converters.kmnr:main',
          'webstreamd-clean = webstreamd.clean:main',
+         'webstreamd-record = webstreamd.record:main',
         ],
     },
 )
-print dist
