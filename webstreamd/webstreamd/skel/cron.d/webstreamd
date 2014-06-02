@@ -1,0 +1,12 @@
+# This the base webstreamd schedule crontab
+# This generates the recording schedule crontab on an interval.
+# It also shows using the KMNR schedule converter to dynamically
+# Fetch the schedule. Comment it if you're going to use a static
+# schedule.json
+
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+*/15 * * * * webstreamd-kmnr > /etc/webstream.d/schedule.json
+*/15 * * * * webstreamd-crontab > /etc/cron.d/webstreamd-schedule
+@daily webstreamd-clean
