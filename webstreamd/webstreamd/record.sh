@@ -4,10 +4,11 @@
 # and calls icecream to do the recording. It uses exec to avoid a subshell
 # so that fewer processes are running.
 
-if [ $# -ne 4 ]; then
-	echo "Usage: {} FILE DURATION STREAM".format(sys.argv[0])
+if [ $# -ne 3 ]; then
+	echo "Usage: ${0} FILE DURATION STREAM"
 	echo "Where DURATION is in minutes."
 	echo "Where FILE does not include the file extension, but may include C date codes"
+    exit 1
 fi
 	
 export TARGETDIR=$(dirname ${1})

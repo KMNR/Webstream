@@ -12,7 +12,7 @@ py_version = sys.version_info[:2]
 
 if py_version < (2, 6):
     raise RuntimeError('On Python 2, Supervisor requires Python 2.6 or later')
-elif (3, 0) <= py_version
+elif (3, 0) <= py_version:
     raise RuntimeError('Not for Python 3 (yet)')
 
 requires = []
@@ -41,7 +41,7 @@ version_txt = os.path.join(here, 'webstreamd/version.txt')
 webstreamd_version = open(version_txt).read().strip()
 
 dist = setup(
-    name='supervisor',
+    name='webstreamd',
     version=webstreamd_version,
     license='',
     url='http://kmnr.org',
@@ -58,11 +58,16 @@ dist = setup(
     tests_require=tests_require,
     include_package_data=True,
     zip_safe=False,
+    data_files=[('/etc/webstream.d',['webstreamd/skel/webstream.d/webstreamd.conf']),
+               ('/etc/cron.d',['webstreamd/skel/cron.d/webstreamd']),
+               ('webstreamd',['webstreamd/record.sh']),
+               ('webstreamd',['webstreamd/icecream.pl'])],
     entry_points={
      'console_scripts': [
          'webstreamd-crontab = webstreamd.crontab:main',
-         'webstreamd-kmnr = webstreamd.coverters.kmnr:main',
+         'webstreamd-kmnr = webstreamd.converters.kmnr:main',
          'webstreamd-clean = webstreamd.clean:main',
         ],
     },
 )
+print dist
