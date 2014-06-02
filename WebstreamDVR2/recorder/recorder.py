@@ -1,5 +1,9 @@
 import urllib2
 import argparse
+import logging
+import re
+import struct
+from datetime import datetime
 
 DEFAULT_AGENT = 'pycream/0.1'
 VERSION = 'pycream/0.1'
@@ -43,6 +47,8 @@ def main():
         help="turn off output")
     group.add_argument('-v', '--verbose', type=bool, default=False,
         help="be verbose")
+    group.add_argument('--debug', type=bool, default=False,
+        help="turn on debugging outputs")
     group.add_argument('--stdout', type=bool, default=False,
         help="output stream to stdout (implies -q)")
     parser.add_argument('-t', '--tracks', type=bool, default=False,
@@ -55,574 +61,185 @@ def main():
         help="set user-agent header to agent")
     parser.add_argument('--sync', type=bool, default=False,
         help="turn syncing on, required for some mpeg players that read from stdin")
-    parser.add_argument('--debug', type=bool, default=False,
-        help="turn on debugging outputs")
+
     args = parser.parse_args()
+    if args.debug:
+        level = logging.DEBUG
+    elif args.quiet:
+        level = logging.CRITICAL
+    elif args.verbose:
+        level = logging.INFO
+    else:
+        level = logging.WARNING
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=level)
     print args
-
-"""
-my $accept_header = "audio/mpeg, audio/x-mpegurl, audio/x-scpls, */*";
-
-
-"""
-def check_stop_cond
-{
-	return if (! defined $config->{'stop-cond'});
-
-	$config->{'stop-cond'} =~ /^(\d+)(\w+)$/;
-	
-	my $count = $1;
-	my $units = $2;
-	my $kb = $config->{'bytes-downloaded'} / 1024;
-
-	if ($units eq 'kb') 
-	{
-		$config->{stop} = ($kb >= $count);
-	} 
-	elsif ($units eq 'mb') 
-	{
-		$config->{stop} = ($kb >= ($count * 1024));
-	} 
-	elsif ($units eq 'min') 
-	{
-		my $elapsed = (time() - $config->{'start-time'}) / 60;
-		$config->{stop} = ($elapsed >= $count);
-	} 
-	elsif ($units eq 'songs') 
-	{
-		$config->{stop} = ($config->{'played-tracks'} >= $count);
-	} 
-	else 
-	{
-		die "unhandled unit $units\n";
-	}
-}
-
-"""
-sub parse_m3u_playlist
-{
-	my ($playlist) = shift || return undef;
-	my (@lines) = split('\n', $playlist);
-	my (@queue) = ();
-	my ($id) = 1;
-
-	foreach my $s (@lines) 
-	{
-		# skip lines beginning with a comment
-		if ($s =~ /^#EXT/)
-		{
-			next;
-		}
-
-		my ($entry) = {};
-		$entry->{id} = $id++;
-		$entry->{file} = $s;
-		push @queue, $entry;
-	}
-
-	return @queue;
-}
-
-sub parse_pls_playlist
-{
-	my ($playlist) = shift || return undef;
-	my (@lines) = split('\n', $playlist);
-	my ($line);
-	my ($entry, $dirty);
-	my ($lastid);
-	my (@queue) = ();
-	
-	# parse_pls_playlist parses a .pls playlist, and
-	# returns a vector of all links in content
-
-	$line = shift @lines;
-	if (! defined $line || $line !~ /^\[playlist\]/i) 
-	{
-		# not a valid playlist
-		print STDERR "invalid playlist file\n";	
-		return undef;
-	}
-
-	$entry = {};
-	$dirty = 0;
-
-	$lastid = 1;	
-	$line = shift @lines;
-	while (defined $line) 
-	{
-		my ($property, $id, $value);
-		
-		# now expecting FileX, TitleX and LengthX
-		if ($line =~ /^(\w+)(\d+)=(.+)$/) 
-		{
-			$property = $1;
-			$id = $2;
-			$value = $3;
-
-			$value =~ s/\s*$//s;
-			
-			if ($id ne $lastid) 
-			{
-				# different entry
-				push @queue, $entry;
-				$entry = {};
-				$dirty = 0;
-				$lastid = $id;
-			}
-			
-			# add property to hash
-			$property = lc $property;
-			$entry->{$property} = $value;
-			$dirty = 1;
-		}
-		
-		$line = shift @lines;
-	}
-	
-	push @queue, $entry if $dirty;
-	return @queue;
-}
-
-sub slurp_file
-{
-	my ($filename) = shift || return undef;
-	my ($data);
-	
-	open(SLURPEE, "<$filename") || return undef;
-	
-	# set delimiter to undef, next read will load the 
-	# entire file into memory
-	local $/ = undef;
-	
-	# read entire file
-	$data = <SLURPEE>;
-	
-	close SLURPEE;
-	return $data;
-}
-
-sub select_socket
-{
-	my ($handle) = shift || return 0;
-	my ($timeout) = shift || return 0;
-	my ($v) = '';
-
-	vec($v, fileno($handle), 1) = 1;
-	return select($v, $v, $v, $timeout / 1000.0);
-}
-
-sub recv_chunk
-{
-	my ($handle) = shift || return undef;
-	my ($cnt) = shift || return undef;
-	my ($data) = '';
-	
-	while ($cnt != 0) 
-	{
-		my ($chunk, $chunksize);
-		my ($next_chunk);
-		
-		$next_chunk = ($cnt > 0) ? $cnt : 1024;
-
-		if (select_socket($handle, $def_timeout) <= 0) 
-		{
-			# timed out
-			print "Timedout!\n";
-			last;
-		}
-		
-		$handle->recv($chunk, $next_chunk);
-		$chunksize = length($chunk);		
-		if ($chunksize == 0) 
-		{
-			# error occured, or end of stream
-			last;
-		}	
-		
-		$data .= $chunk;
-		$cnt -= $chunksize;
-		
-		# paranoia, what if a bigger chunk is received
-		$cnt = 0 unless $cnt > 0;
-	}
-	
-	return $data;
-}
-
-sub split_url
-{
-	my ($url) = shift || return undef;
-	my ($host, $port, $path);
-
-	$port = undef;
-	
-	if ($url =~ /^([\d\w\._\-]+)(:\d+)??(\/.*)??$/) 
-	{
-		$host = $1;
-		if (defined $2) 
-		{
-			# port includes the colon
-			$port = substr($2, 1);
-		}
-		
-		$path = $3;
-	} 
-	else 
-	{
-		# unparsable
-		print "*** UNPARSABLE ***\n";
-		return undef;
-	}
-
-	return ($host, $port, $path);	
-}
-
-sub slurp_http
-{
-	my ($location) = shift || return undef;
-	my ($host, $port, $path);
-	my ($sock);
-	my ($data, $request);
-
-	debug("slurping http resource at $location");
-
-	# parse location	
-	$location = strip_protocol($location);
-	($host, $port, $path) = split_url($location);
-		
-	# parsing errors?
-	return undef unless defined $host;
-	$port = 80 unless defined $port;
-	$path = "/" unless defined $path;
-
-	debug("retreiving from $host $port $path");
-
-	$sock = IO::Socket::INET->new(PeerAddr => $host,
-				PeerPort => $port,
-				Proto => 'tcp');
-	
-	# error connecting?
-	return undef unless defined $sock;
-	
-	$sock->autoflush(1);
-	
-	my $agent = $config->{'user-agent'};
-	$request = "GET $path HTTP/1.0\r\n" .
-		"Host: $host:$port\r\n" .
-		"Accept: ${accept_header}\r\n" .
-		"User-Agent: $agent\r\n" .
-		"\r\n";
-
-	debug("sending request to server", $request);
-	print $sock $request;
-
-	$data = recv_chunk($sock, -1);
-	$sock->shutdown(2);
-
-	debug("data retreived from server", $data);
-	return $data;
-}
-
-sub get_http_body
-{
-	my ($message) = shift || return undef;
-	my ($header, $body);
-	
-	($header, $body) = split("\r\n\r\n", $message, 2);
-	return $body;
-}
-
-sub extract_status_code
-{
-	my ($message) = shift || return undef;
-
-	if ($message !~ /^(.+)\s+(\d+)/) 
-	{
-		return undef;
-	}
-	
-	return $2;
-}
-
-sub get_302_location
-{
-	my ($message) = shift || return undef;
-
-	if ($message =~ /.*Location:\s*(.+)\n/i)
-	{
-		return $1;
-	}
-
-	# uhm? where did it go?
-	return undef;
-}
-
-sub retreive_http_playlist
-{
-	my ($location) = shift || return undef;
-	my ($response);
-	my ($status);
-	
-	while (1) 
-	{
-		$response = slurp_http($location);
-		return undef unless defined $response;
-	
-		$status = extract_status_code($response);
-		if (! defined $status) 
-		{
-			# problems parsing
-			return undef;
-		}
-	
-		if ($status == 200) 
-		{
-			# 200 OK
-			return get_http_body($response);
-		}
-	
-		if ($status == 302) 
-		{
-			# location moved
-			$location = get_302_location($response);
-			debug("new location $location\n");
-			next;
-		}
-
-		# 404, 5XX and anything else
-		return undef;
-	}
-}
-
-sub retreive_playlist
-{
-	my ($location) = shift || return undef;
-	
-	if ($location =~ /^(\w+):\/\/(.+)$/) 
-	{
-		my $protocol = $1;
-		my $url = $2;
-		
-		if ($protocol eq "file") 
-		{
-			# local file requested
-			return slurp_file($url);
-		}
-		
-		if ($protocol eq "http") 
-		{
-			# remote http file
-			return retreive_http_playlist($url);
-		}
-		
-		# unknown protocol
-		return undef;
-	}
-	
-	# no protocol specified, assuming local file
-	return slurp_file($location);
-}
-
-sub slurp_headers
-{
-	my ($sock) = shift || return undef;
-	my ($max_length) = shift || -1;
-	my ($data);
-	my ($headers) = '';
-	
-	return "" if ($max_length == 0);
-	
-	$data = recv_chunk($sock, 1);
-	while (defined $data) 
-	{
-		$headers .= $data;
-		last if $headers =~ /\r\n\r\n/;
-		
-		if ($max_length != -1 && length($headers) >= $max_length) 
-		{
-			# just enough (we're reading one byte at a time)
-			last;
-		}
-			
-		$data = recv_chunk($sock, 1);
-	}
-	
-	return $headers;
-}
-
-sub trim
-{
-	my ($str) = shift || return undef;
-	
-	$str =~ s/^[\s\t]//g;
-	$str =~ s/[\s\t]$//g;
-	return $str;
-}
-
-sub parse_stream_headers
-{
-	my ($headers) = shift || return undef;
-	my (@lines) = split('\n', $headers);
-	my ($server) = {};
-	
-	foreach my $line (@lines) 
-	{
-		my ($key, $value);
-		
-		if ($line =~ /^\s*([\w\-]+)\s*\:\s*(.+)\s*$/) 
-		{
-			$key = $1;
-			$value = $2;
-			
-			$key = trim($key);
-			$value = trim($value);
-			
-			$server->{$key} = $value;
-		}
-		
-	}
-	
-	return $server;
-}
-
-sub parse_meta
-{
-	my ($meta) = shift || return undef;
-	
-	if ($meta =~ /StreamTitle='(.+){1}'/) 
-	{
-		my $title = $1;
-		$title =~ s/\';(.*)$//;
-		return $title;
-	}
-	
-	return undef;
-}
-
-sub sync_mp3_frame
-{
-	my ($data) = shift || return undef;
-	my ($expected_sync_count) = shift;
-
-	if (! defined $expected_sync_count)
-	{
-		$expected_sync_count = $max_sync_count;
-	}
-
-	# break recursion
-	debug("entered recursion with expected = $expected_sync_count, len=" . length($data));
-	return $data if ($expected_sync_count == 0);
-
-	my $offset = 0;
-	my $max_offset = length($data) - 3;
-	while ($offset < $max_offset)
-	{
-		# look for sync data
-		my $frame = unpack('N', substr($data, $offset, $offset + 4));
-
-		if (($frame & 0xfff00000) == 0xfff00000)
-		{
-			# padding bit
-			my $padding = ($frame >> 9) & 1;
-
-			# 0: mpeg1, 1:mpeg2, 2:mpeg2.5
-			my $mpg_ver = 0;                 # ISO/IEC 11172-3
-			my $ver_idx = ($frame >> 19) & 3;
-			$mpg_ver = 1 if ($ver_idx == 2); # ISO/IEC 13818-3
-			$mpg_ver = 2 if ($ver_idx == 0); # unofficial
-			goto next_sync if $ver_idx == 1; # reserved
-
-			# find mpeg layer (0 for Layer I)
-			my $layer = 3 - (($frame >> 17) & 3);
-			goto next_sync if $layer == 3; # reserved
-
-			my $sample_rate = $freq_table[($frame >> 10) & 3][$mpg_ver];
-
-			my $br_idx = 0;
-			if ($mpg_ver == 0)
-			{
-				# easy. MPEG1
-				$br_idx = $layer;
-			}
-			else
-			{
-				# MPEG2 and MPEG2.5
-				$br_idx = 3 if ($layer == 0);
-				$br_idx = 4 if ($layer > 0);
-			}
-
-			my $bitrate = 1000 * $bitrate_table[($frame >> 12) & 0xf][$br_idx];
-
-			my $frame_size = int(144 * $bitrate / ($sample_rate)) + $padding;
-			debug("frame_size $frame_size");
-
-			# recursively find more sync bits
-			if (($offset + $frame_size) > $max_offset)
-			{
-				# impossible for another frame to be found
-				return undef;
-			}
-
-			my $subdata = substr($data, $offset + $frame_size);
-			my $rec = sync_mp3_frame($subdata, $expected_sync_count - 1);
-			if (defined $rec)
-			{
-				# recursion ended!
-				return $subdata;
-			}
-		}
-
-		next_sync:
-		
-		if ($expected_sync_count < $max_sync_count)
-		{
-			# we are not allowed to continue loop inside recursion
-			last;
-		}
-
-		$offset++;
-	}
-
-	return undef;
-}
-
-sub recv_metablock
-{
-	my ($sock) = shift || return undef;
-	my ($block_size);
-	my ($data);
-	
-	$block_size = recv_chunk($sock, 1);
-	$block_size = ord($block_size) * 16;
-	return "" if ($block_size == 0);
-	
-	$data = recv_chunk($sock, $block_size);
-	return $data;
-}
-
-sub fix_filename
-{
-	my ($fn) = shift || return undef;
-
-	# remove all characters that cause problems
-	# on unices and on windows
-	$fn =~ s/[\\\/\?\*\:\t\n\r]//g;
-	return $fn;
-}
-
-sub open_output
-{
-	my ($context) = shift || return 0;
-	my ($fn) = shift || return 0;
-
-	$fn = fix_filename($fn);
-	open(OUTPUT, ">$fn") || die "FIXME: ";
-	OUTPUT->autoflush(1);
-	binmode OUTPUT;
-	$context->{output_open} = 1;
-	return 1;
-}
-
+    
+def parse_stop_condition(stopcond):
+    m = re.search('^(\d+)(\w+)$', stopcond)
+    amnt = m.group(1)
+    unit = m.group(2)
+    return (amnt,unit)
+    
+def parse_m3u_playlist(fp):
+    streams = []
+    id = 1
+    for line in fp:
+        if re.search('^#EXT'):
+            continue
+        streams.append({'id':id, 'file':line.strip()})
+    return streams
+    
+def parse_pls_playlist(fp):
+    streams = []
+    first = fp.readline()
+    if re.search('^\[playlist\]', flags=re.IGNORECASE):
+        raise ValueError('Incorrectly formatted pls file')
+    
+    for line in fp:
+        if not line:
+            continue
+        m = re.search('^(\w+)(\d+)=(.+)$')
+        if m:
+            property = m.groups(1)
+            id = m.groups(2)
+            value = m.groups(3).strip()
+            streams.append({'property': property.lower(), 'value': value})
+    return streams
+    
+def recv_chunk(fp, count):
+    data = []
+    while count > 0:
+        next_chunk = count if count > 0 else 1024
+        
+        chunk = fp.read(next_chunk)
+        if len(data) == 0:
+            break
+            
+        data += chunk
+        count -= len(data)
+    return data
+
+def parse_meta(self,meta):
+    m = re.search('(.+){1}')
+    if not m:
+        raise ValueError("No meta pattern match in {}".format(meta))
+       
+    meta = m.groups(1)
+    return = re.sub('\';(.*)$','',meta)
+    
+def sync_mp3_frame(self, data, expected_sync_count=None):
+    if expected_sync_count == None:
+        expected_sync_count = MAX_SYNC_COUNT
+     
+    logging.debug("entered recursion with expected = {}, len={}".format(expected_sync_count,length($data)))
+    if expected_sync_count == 0:
+        return data
+    
+    offset = 0
+    max_offset = len(data) - 3
+    
+    for i in xrange(offset,max_offset):
+        frame = struct.unpack('>L', data[offset:offset+4])
+        do_next_sync = False
+        if (frame & 0xfff00000) == 0xfff00000:
+            padding = (frame >> 9) & 1
+            mpg_ver = 0 # 0 mpeg1, 1 mpeg2, 2 mpeg2.5
+            ver_idx = (frame >> 19) & 3
+            if ver_idx == 2:
+                mpg_ver = 1
+            elif ver_idx == 0:
+                mpg_ver = 2
+            layer = 3 - ((frame >> 17) & 3)
+            if layer != 3 and mpg_ver != 0:
+                sample_rate = FREQ_TABLE[(frame >> 10) & 3][mpg_ver]
+                br_idx = 0
+                if mpg_ver == 0:
+                    br_idx = layer
+                elif layer == 0:
+                    br_idx = 3
+                elif layer > 0:
+                    br_idx = 4
+                
+                bitrate = 1000 * BITRATE_TABLE[(frame >> 12) & 0xf][br_idx]
+                framesize = int(144 * bitrate / sample_rate) + padding
+                logging.debug("frame_size {}".format(framesize))
+            
+                # recursively find more sync bits
+                if offset + frame_size > max_offset:
+                    # impossible for another frame to be found
+                    return None
+
+                subdata = data[(offset+frame_size):]
+                rec = sync_mp3_frame(subdata, expected_sync_count-1)
+                if rec != None:
+                    return subdata
+        
+        if expected_sync_count < max_sync_count:
+            break
+    return None
+    
+def recv_metablock(fp):
+    block_size = self.recv_chunk(fp,1)
+    block_size = ord(block_size) * 16
+    return "" if blocksize == 0 else recv_chunk(fp, block_size)
+
+def fix_filename(fn):
+    return re.sub('[\\\/\?\*\:\t\n\r]','',fn)
+
+def open_ouput(fn):
+    fn = self.fix_filename(fn)
+    fp = open(fn, 'w+', 0)
+    self.output = fp    
+  
+class Recorder(object):
+    def __init__(self, stream, name, output, stop=None, tracks=False, agent=None, sync=False):
+        self.name = name
+        self.stop = parse_stop_condition(stop) if stop else None
+        self.tracks = tracks
+        self.agent = agent if agent else DEFAULT_AGENT
+        self.sync = sync
+        self.bytes_read = 0
+        self.start_time = datetime.today()
+        self.stopping = False
+        self.tracks = 0
+        self.stream = stream
+        self.output = output
+    
+    def check_stop_condition(self):
+        if self.stop == None:
+            return False
+            
+        kb = self.bytes_read / 1024
+        amnt,unit = self.stop
+        
+        b = False
+        if unit == 'kb':
+            b = (kb > amnt)
+        elif unit == 'mb':
+            b = (kb > amnt*1024)
+        elif unit == 'min':
+            elapsed = datetime.today() - self.start_time
+            elapsed = elapsed.total_seconds() / 60
+            b = (elapsed > amnt)
+        elif unit == 'songs':
+            b = (self.tracks > amnt)
+        else:
+            raise ValueError("Invalid Unit: {}".format(unit))
+        
+        self.stopping = b
+        return b
+   
+    def retreive_playlist(self,url):
+        headers = { 'User-Agent' : self.agent }
+        req = urllib2.Request('url', None, headers)
+        return urllib2.urlopen(req).read()
+
+
+    def write_block(self, chunk):
+        if self.name:
+            self.title = self.name
+            
+     
 sub write_block
 {
 	my ($chunk) = shift || return;
