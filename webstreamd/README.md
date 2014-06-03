@@ -47,7 +47,7 @@ webstreamd creates a configuration file in `/etc/webstream.d/webstreamd.conf` wi
 * keepfor : The number of days that you will keep the recording for in days.
 
 **schedule**
-* schedule/schedule : The location of the schedule json file.
+* schedule : The location of the schedule json file.
 
 webstreamd comes bundled with an example schedule file: You can rewrite to this schedule file as you desire and webstreamd will create a new crontab based on that schedule file (see cron)
 
