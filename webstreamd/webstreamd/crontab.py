@@ -32,7 +32,7 @@ def show_to_crontab(show):
     time_format = "%H:%M:%S"
     start_time = datetime.strptime(show['start_time'],time_format)
     cronline = "{min} {hour} {dom} {mon} {dow} root {command}"
-    file = "{target}{show}/{show}-%Y-%m-%d".format(target=settings.RECORDINGDIR,
+    file = "{target}{show}/{show}-\%Y-\%m-\%d".format(target=settings.RECORDINGDIR,
         show=safename(show['title']))
         
     script = "webstreamd-record"

@@ -7,6 +7,5 @@
 SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
-*/15 * * * * root webstreamd-kmnr > /etc/webstream.d/schedule.json
-*/15 * * * * root webstreamd-crontab > /etc/cron.d/webstreamd-schedule
+*/15 * * * * root webstreamd-kmnr > /etc/webstream.d/schedule.json && webstreamd-crontab > /etc/cron.d/webstreamd-schedule
 @daily root webstreamd-clean
