@@ -1,12 +1,18 @@
+"""
+@author Stephen Jackson <scj7t4@mst.edu>
+
+This script executes the actual recoring: It makes the directories needed
+and calls icecream to do the recording.
+"""
 import subprocess
 import sys
 import os
 
-# This script executes the actual recoring: It makes the directories needed
-# and calls icecream to do the recording.
-
 def main():
-     
+    """
+    Creates the directory that will be used for recording, then uses the
+    bundled icecream script to record it.
+    """
     if len(sys.argv) != 4:
         print "Usage: {} FILE DURATION STREAM".format(sys.argv[0])
         print "Where DURATION is in minutes."
