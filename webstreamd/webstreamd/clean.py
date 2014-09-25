@@ -1,3 +1,9 @@
+"""
+@author Stephen Jackson <scj7t4@mst.edu>
+
+Removes recordings from a too early period.
+"""
+
 import subprocess
 import sys
 import os
@@ -8,6 +14,11 @@ from settings import Settings
 settings = Settings()
 
 def do_directory(p):
+    """
+    Recurses into directories looking for files.
+    
+    p is the input directory
+    """
     contents = os.listdir(p)
     for f in contents:
         if os.path.isfile(os.path.join(p,f)):
@@ -18,6 +29,12 @@ def do_directory(p):
         subprocess.Popen(['rm','-r',p]).wait()
 
 def do_file(p,f):
+    """
+    Checks a file to see if it is old enough to warrant deleing
+    
+    p is the directory it is in
+    f is the name of the file.
+    """
     (bn, _) = os.path.splitext(f)
     l = bn.split('-')
     if len(l) >= 4:
@@ -28,6 +45,12 @@ def do_file(p,f):
             subprocess.Popen(['rm',f],cwd=p).wait()
 
 def main():
+    """
+    Removes playlists older than a number of days specified in the config file.
+    
+    If no config file is given as a commandline argument, uses the
+    default config file (Settings.DEFAULTCONFIG).
+    """
     if len(sys.argv) == 2:
         conf_file = sys.argv[1]
     elif len(sys.argv) == 1:

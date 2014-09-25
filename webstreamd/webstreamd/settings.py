@@ -1,9 +1,27 @@
+"""
+@author Stephen Jackson <scj7t4@mst.edu>
+
+This loads a configuration file
+"""
 from datetime import timedelta
 import ConfigParser
 
 class Settings(object):
-    DEFAULTCONFIG = "/etc/webstream.d/webstreamd.conf"
+    """
+    Configuration Options:
     
+    stream/streamurl : The location of the stream that will be recorded. In
+        theory this can be a .pls or .m3u stream url.
+    recording/leadin : The amount of time in minutes that will be recorded
+        before the show is scheduled to start (for early starts etc)
+    recording/leadout : The amount of time in minutes that will be recorded
+        after the show is scheduled to end (for run-over etc)\
+    recording/directory : The directory where the recordings will be made.
+    recording/keepfor : The number of days that you will keep the recording
+        for in days.
+    schedule/schedule : The location of the schedule json file.
+    """
+    DEFAULTCONFIG = "/etc/webstream.d/webstreamd.conf" 
     
     def __init__(self):
         pass

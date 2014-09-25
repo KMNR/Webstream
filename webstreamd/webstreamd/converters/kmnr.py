@@ -1,3 +1,9 @@
+"""
+@author Stephen Jackson <scj7t4@mst.edu>
+
+Converts the KMNR style schedule to the one used in webstreamd
+"""
+
 from datetime import *
 import urllib2
 import json
