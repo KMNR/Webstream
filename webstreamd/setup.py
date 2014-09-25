@@ -58,9 +58,9 @@ dist = setup(
     tests_require=tests_require,
     include_package_data=True,
     zip_safe=False,
-    data_files=[('/etc/webstream.d',['webstreamd/skel/webstream.d/webstreamd.conf']),
-               ('/etc/cron.d',['webstreamd/skel/cron.d/webstreamd']),
-               ('webstreamd',['webstreamd/icecream.pl'])],
+    data_files=[('/etc/webstream.d',['webstreamd/skel/webstream.d/webstreamd.conf.example']),
+                ('/etc/cron.d',['webstreamd/skel/cron.d/webstreamd.example']),
+                ('webstreamd',['webstreamd/icecream.pl'])],
     entry_points={
      'console_scripts': [
          'webstreamd-crontab = webstreamd.crontab:main',

@@ -21,8 +21,16 @@ def add_leaders(show):
     # Adjust the start time
     time_format = "%H:%M:%S"
     start_time = datetime.strptime(show['start_time'],time_format)
+    orig_time = start_time.time()
     start_time -= settings.LEADIN
-    
+    new_time = start_time.time()
+
+    if orig_time < new_time:
+        # The date wrapped and we need to adjust for the new day.
+        show['start_day'] -= 1
+        if show['start_day'] == 0:
+            show['start_day'] = 7
+            
     # Store the adjusted time
     show['start_time'] = str(start_time.time())
     
@@ -50,7 +58,7 @@ def show_to_crontab(show):
         'hour': start_time.hour,
         'dom': '*',
         'mon': '*',
-        'dow': show['start_day'] % 7,
+        'dow': show['start_day'] % 7, # Converts from python to Crontab
         'command': cmd
         }
     return cronline.format(**cd)
