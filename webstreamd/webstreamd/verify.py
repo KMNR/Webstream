@@ -1,18 +1,22 @@
 """
 @author Doug McGeehan <djmvfb@mst.edu>
-"""
-import json
 
+Verify that shows in the current schedule are actually being recorded.
+
+Currently, this script only works if you have a symbolic link to the
+neighboring 'webstreamd' directory.
+"""
+
+import json
 from webstreamd.crontab import safename
+import sys
+import os
+import urllib
+
 
 KMNR_ORG_SCHEDULE_URL = 'https://kmnr.org/api/schedule/'
 SHOW_RECORDINGS_DIR = '/var/www/'
 
-
-import sys
-import os
-import urllib
-from unidecode import unidecode
 
 def _print_summary(show):
     print(show['title'].encode('utf-8'))

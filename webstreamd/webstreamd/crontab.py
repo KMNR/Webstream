@@ -8,6 +8,9 @@ from datetime import *
 import json
 import sys
 import os
+
+from unidecode import unidecode
+
 from settings import Settings
 
 settings = Settings()
@@ -16,7 +19,8 @@ def safename(s):
     """
     Strips the string s of all the non-alphanumeric characters.
     """
-    return ''.join(e.encode('utf-8') for e in s if e.isalnum())
+    cleaned_string = unidecode(s)
+    return ''.join(e.encode('utf-8') for e in cleaned_string if e.isalnum())
 
 def add_leaders(show):
     """
