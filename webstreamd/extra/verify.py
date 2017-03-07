@@ -28,9 +28,19 @@ def main():
     shows = json.loads(schedule_raw)
     print('{} shows are defined in the schedule'.format(len(shows)))
 
+    non_existent_shows = []
     for show in shows:
         if not _verify_exists(show=show['title'], within=SHOW_RECORDINGS_DIR):
             _print_summary(show=show)
+            non_existent_shows.append(show)
+
+    print('-'*80)
+    print('{0} shows are not currently recorded (out of {1})'.format(
+        len(non_existent_shows),
+        len(shows)
+    ))
+    # show_titles = [show['title'] for show in non_existent_shows]
+    # print('\t{}'.format('\n\t'.join(show_titles)))
 
 
 
