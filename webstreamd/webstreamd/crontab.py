@@ -16,7 +16,7 @@ def safename(s):
     """
     Strips the string s of all the non-alphanumeric characters.
     """
-    return ''.join(e for e in s if e.isalnum())
+    return ''.join(e.encode('utf-8') for e in s if e.isalnum())
 
 def add_leaders(show):
     """
