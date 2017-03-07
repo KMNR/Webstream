@@ -8,7 +8,7 @@ neighboring 'webstreamd' directory.
 """
 
 import json
-from webstreamd.crontab import safename
+from crontab import safename
 import sys
 import os
 import urllib
