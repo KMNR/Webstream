@@ -67,6 +67,7 @@ dist = setup(
          'webstreamd-kmnr = webstreamd.converters.kmnr:main',
          'webstreamd-clean = webstreamd.clean:main',
          'webstreamd-record = webstreamd.record:main',
+         'webstreamd-verify = webstreamd.verify:main',
         ],
     },
 )
